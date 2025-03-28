@@ -79,13 +79,13 @@
         resultadosDiv.innerHTML = '';
 
         // Realizando a requisição POST para a URL da API
-        fetch('/filtrar-veiculos/', {  // Em vez de "/automoveis/consulta-veiculos/"
-            method: 'POST',
+        fetch('/automoveis/consulta-veiculos/', {
+            method: 'POST', // Certifique-se de que o método é 'POST'
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
+                'Content-Type': 'application/json', // Informando que os dados são em JSON
+                'X-CSRFToken': '{{ csrf_token }}', // Enviando o token CSRF para segurança
             },
-            body: JSON.stringify(filtros),
+            body: JSON.stringify(filtros), // O corpo da requisição com os filtros convertidos em JSON
         })
         .then(response => response.json()) // Tratando a resposta em JSON
         .then(data => {

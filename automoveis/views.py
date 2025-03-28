@@ -38,11 +38,7 @@ def iniciar_consulta(request):
 # Função de Controller para consulta de veículos
 
 
-
-
-
-
-@csrf_exempt  
+@csrf_exempt
 def filtrar_veiculos(request):
     if request.method == "POST":
         try:
@@ -68,21 +64,41 @@ def filtrar_veiculos(request):
 
             # Se não encontrar resultados
             if not query.exists():
-                response_data = {"status": "sucesso", "mensagem": "Nenhum veículo encontrado.", "dados": []}
+                response_data = {
+                    "status": "sucesso",
+                    "mensagem": "Nenhum veículo encontrado.",
+                    "dados": []
+                }
                 return JsonResponse(response_data)
 
-            # Se houver resultados
-            dados = list(query.values('id', 'marca', 'modelo', 'ano', 'motorizacao', 'combustivel', 'preco'))
-            response_data = {"status": "sucesso", "mensagem": "Consulta realizada com sucesso.", "dados": dados}
+            # Se houver resultados, inclui os novos campos
+            dados = list(query.values(
+                'id', 'marca', 'modelo', 'ano', 'cor', 'quilometragem', 'motorizacao', 'combustivel', 'preco'
+            ))
+
+            response_data = {
+                "status": "sucesso",
+                "mensagem": "Consulta realizada com sucesso.",
+                "dados": dados
+            }
             return JsonResponse(response_data)
 
         except Exception as e:
             error_message = str(e)
-            response_data = {"status": "erro", "mensagem": error_message, "dados": []}
+            response_data = {
+                "status": "erro",
+                "mensagem": error_message,
+                "dados": []
+            }
             return JsonResponse(response_data)
 
     else:
-        return JsonResponse({"status": "erro", "mensagem": "Método não permitido.", "dados": []}, status=405)
+        return JsonResponse({
+            "status": "erro",
+            "mensagem": "Método não permitido.",
+            "dados": []
+        }, status=405)
+
 
 def consulta_veiculos(request):
     if request.method == "GET":
