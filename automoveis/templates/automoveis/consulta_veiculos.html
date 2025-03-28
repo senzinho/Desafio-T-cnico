@@ -39,80 +39,97 @@
         <div id="resultados" class="row mt-4"></div>
     </div>
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const form = document.getElementById('filtros-form');
-            const resultadosDiv = document.getElementById('resultados');
-            const loading = document.getElementById('loading');
-            const filtrarSemelhantesBtn = document.getElementById('filtrar-semelhantes');
+ document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById('filtros-form');
+    const resultadosDiv = document.getElementById('resultados');
+    const loading = document.getElementById('loading');
+    const filtrarSemelhantesBtn = document.getElementById('filtrar-semelhantes');
 
-            form.addEventListener('submit', function(event) {
-                event.preventDefault();
-                buscarVeiculos();
-            });
+    // Evitar o comportamento padrão do formulário e chamar a função de busca
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+        buscarVeiculos();
+    });
 
-            filtrarSemelhantesBtn.addEventListener('click', function() {
-                buscarVeiculos(true);
-            });
+    // Evento de clique no botão "Filtrar Semelhantes"
+    filtrarSemelhantesBtn.addEventListener('click', function() {
+        buscarVeiculos(true);
+    });
 
-            function buscarVeiculos(filtrarSemelhantes = false) {
-                const marca = document.getElementById('marca').value.trim();
-                const ano = document.getElementById('ano').value.trim();
-                const combustivel = document.getElementById('combustivel').value.trim();
-                
-                const filtros = {};
-                if (marca) filtros.marca = marca;
-                if (ano) filtros.ano = ano;
-                if (combustivel) filtros.combustivel = combustivel;
+    // Função para buscar veículos
+    function buscarVeiculos(filtrarSemelhantes = false) {
+        // Obtendo os valores dos filtros do formulário
+        const marca = document.getElementById('marca').value.trim();
+        const ano = document.getElementById('ano').value.trim();
+        const combustivel = document.getElementById('combustivel').value.trim();
+        
+        // Montando os filtros com base nos dados obtidos do formulário
+        const filtros = {};
+        if (marca) filtros.marca = marca;
+        if (ano) filtros.ano = ano;
+        if (combustivel) filtros.combustivel = combustivel;
 
-                if (filtrarSemelhantes) {
-                    filtros.filtrarSemelhantes = true;
+        // Se o filtro de semelhantes estiver ativo, adicionar o parâmetro
+        if (filtrarSemelhantes) {
+            filtros.filtrarSemelhantes = true;
+        }
+        
+        // Exibindo o carregamento e limpando os resultados anteriores
+        loading.classList.remove('d-none');
+        resultadosDiv.innerHTML = '';
+
+        // Realizando a requisição POST para a URL da API
+        fetch('/automoveis/consulta-veiculos/', {
+            method: 'POST', // Certifique-se de que o método é 'POST'
+            headers: {
+                'Content-Type': 'application/json', // Informando que os dados são em JSON
+                'X-CSRFToken': '{{ csrf_token }}', // Enviando o token CSRF para segurança
+            },
+            body: JSON.stringify(filtros), // O corpo da requisição com os filtros convertidos em JSON
+        })
+        .then(response => response.json()) // Tratando a resposta em JSON
+        .then(data => {
+            // Ocultando o carregamento após a resposta
+            loading.classList.add('d-none');
+
+            if (data.status === 'sucesso') {
+                // Verificando se existem dados retornados
+                if (data.dados.length === 0) {
+                    resultadosDiv.innerHTML = '<p class="text-center text-muted">Nenhum veículo encontrado.</p>';
+                } else {
+                    resultadosDiv.innerHTML = ''; // Limpando resultados anteriores
+                    // Iterando sobre os dados dos veículos e criando os elementos HTML
+                    data.dados.forEach(veiculo => {
+                        const divVeiculo = document.createElement('div');
+                        divVeiculo.classList.add('col-md-4');
+                        divVeiculo.innerHTML = `
+                            <div class="card shadow-sm mb-4">
+                                <div class="card-body">
+                                    <h5 class="card-title text-primary">${veiculo.ano} ${veiculo.marca} ${veiculo.modelo}</h5>
+                                    <p class="card-text"><strong>Motorização:</strong> ${veiculo.motorizacao}</p>
+                                    <p class="card-text"><strong>Combustível:</strong> ${veiculo.combustivel}</p>
+                                    <p class="card-text"><strong>Preço:</strong> R$ ${veiculo.preco}</p>
+                                </div>
+                            </div>
+                        `;
+                        // Adicionando o veículo à lista de resultados
+                        resultadosDiv.appendChild(divVeiculo);
+                    });
                 }
-                
-                loading.classList.remove('d-none');
-                resultadosDiv.innerHTML = '';
-                
-                fetch('/automoveis/consulta-veiculos/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify(filtros),
-                })
-                .then(response => response.json())
-                .then(data => {
-                    loading.classList.add('d-none');
-                    if (data.status === 'sucesso') {
-                        if (data.dados.length === 0) {
-                            resultadosDiv.innerHTML = '<p class="text-center text-muted">Nenhum veículo encontrado.</p>';
-                        } else {
-                            resultadosDiv.innerHTML = ''; 
-                            data.dados.forEach(veiculo => {
-                                const divVeiculo = document.createElement('div');
-                                divVeiculo.classList.add('col-md-4');
-                                divVeiculo.innerHTML = `
-                                    <div class="card shadow-sm mb-4">
-                                        <div class="card-body">
-                                            <h5 class="card-title text-primary">${veiculo.ano} ${veiculo.marca} ${veiculo.modelo}</h5>
-                                            <p class="card-text"><strong>Motorização:</strong> ${veiculo.motorizacao}</p>
-                                            <p class="card-text"><strong>Combustível:</strong> ${veiculo.combustivel}</p>
-                                            <p class="card-text"><strong>Preço:</strong> R$ ${veiculo.preco}</p>
-                                        </div>
-                                    </div>
-                                `;
-                                resultadosDiv.appendChild(divVeiculo);
-                            });
-                        }
-                    } else {
-                        alert('Erro: ' + data.mensagem);
-                    }
-                })
-                .catch(error => {
-                    loading.classList.add('d-none');
-                    console.error('Erro na requisição:', error);
-                });
+            } else {
+                // Exibindo erro caso o status não seja sucesso
+                alert('Erro: ' + data.mensagem);
             }
+        })
+        .catch(error => {
+            // Ocultando o carregamento e exibindo o erro no console
+            loading.classList.add('d-none');
+            console.error('Erro na requisição:', error);
         });
+    }
+});
+
+
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
