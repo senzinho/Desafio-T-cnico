@@ -1,0 +1,162 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Veículos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            color: #2c3e50;
+        }
+
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        form label {
+            font-size: 14px;
+            margin-top: 10px;
+            display: block;
+        }
+
+        form input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        form button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        form button:hover {
+            background-color: #2980b9;
+        }
+
+        #resultados {
+            margin-top: 30px;
+        }
+
+        .veiculo {
+            background-color: #fff;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .veiculo h3 {
+            margin: 0;
+            color: #3498db;
+        }
+
+        #loading {
+            display: none;
+            text-align: center;
+            font-size: 16px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <h1>Filtrar Veículos</h1>
+    <form id="filtros-form">
+        <label for="marca">Marca:</label>
+        <input type="text" id="marca" name="marca" placeholder="Digite a marca">
+
+        <label for="ano">Ano:</label>
+        <input type="number" id="ano" name="ano" placeholder="Digite o ano">
+
+        <label for="combustivel">Combustível:</label>
+        <input type="text" id="combustivel" name="combustivel" placeholder="Ex: Gasolina">
+
+        <button type="submit">Buscar</button>
+    </form>
+
+    <h2>Resultados</h2>
+    <p id="loading">Carregando...</p>
+    <div id="resultados"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById('filtros-form');
+            const resultadosDiv = document.getElementById('resultados');
+            const loading = document.getElementById('loading');
+
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                buscarVeiculos();
+            });
+
+            function buscarVeiculos() {
+                const marca = document.getElementById('marca').value;
+                const ano = document.getElementById('ano').value;
+                const combustivel = document.getElementById('combustivel').value;
+                
+                const filtros = { marca, ano, combustivel };
+                
+                loading.style.display = 'block';
+                resultadosDiv.innerHTML = '';
+                
+                fetch('/automoveis/consulta-veiculos/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify(filtros),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    loading.style.display = 'none';
+                    if (data.status === 'sucesso') {
+                        if (data.dados.length === 0) {
+                            resultadosDiv.innerHTML = '<p>Nenhum veículo encontrado.</p>';
+                        } else {
+                            data.dados.forEach(veiculo => {
+                                const divVeiculo = document.createElement('div');
+                                divVeiculo.classList.add('veiculo');
+                                divVeiculo.innerHTML = `
+                                    <h3>${veiculo.ano} ${veiculo.marca} ${veiculo.modelo}</h3>
+                                    <p><strong>Motorização:</strong> ${veiculo.motorizacao}</p>
+                                    <p><strong>Combustível:</strong> ${veiculo.combustivel}</p>
+                                    <p><strong>Preço:</strong> R$ ${veiculo.preco}</p>
+                                `;
+                                resultadosDiv.appendChild(divVeiculo);
+                            });
+                        }
+                    } else {
+                        alert('Erro: ' + data.mensagem);
+                    }
+                })
+                .catch(error => {
+                    loading.style.display = 'none';
+                    console.error('Erro na requisição:', error);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
