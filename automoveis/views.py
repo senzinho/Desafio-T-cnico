@@ -38,68 +38,6 @@ def iniciar_consulta(request):
 # Função de Controller para consulta de veículos
 
 
-@csrf_exempt
-def filtrar_veiculos(request):
-    if request.method == "POST":
-        try:
-            filtros = json.loads(request.body)  # Carrega os filtros enviados pelo cliente
-            marca = filtros.get('marca')
-            ano = filtros.get('ano')
-            combustivel = filtros.get('combustivel')
-            filtrar_semelhantes = filtros.get('filtrarSemelhantes', False)
-
-            # Construir a consulta com base nos filtros
-            query = Automovel.objects.all()
-
-            if marca:
-                query = query.filter(marca__icontains=marca)
-            if ano:
-                query = query.filter(ano=ano)
-            if combustivel:
-                query = query.filter(combustivel__icontains=combustivel)
-
-            # Filtrar semelhantes se necessário
-            if filtrar_semelhantes:
-                query = query.filter(tipo_veiculo__icontains="semelhante")  # Ajuste conforme a lógica
-
-            # Se não encontrar resultados
-            if not query.exists():
-                response_data = {
-                    "status": "sucesso",
-                    "mensagem": "Nenhum veículo encontrado.",
-                    "dados": []
-                }
-                return JsonResponse(response_data)
-
-            # Se houver resultados, inclui os novos campos
-            dados = list(query.values(
-                'id', 'marca', 'modelo', 'ano', 'cor', 'quilometragem', 'motorizacao', 'combustivel', 'preco'
-            ))
-
-            response_data = {
-                "status": "sucesso",
-                "mensagem": "Consulta realizada com sucesso.",
-                "dados": dados
-            }
-            return JsonResponse(response_data)
-
-        except Exception as e:
-            error_message = str(e)
-            response_data = {
-                "status": "erro",
-                "mensagem": error_message,
-                "dados": []
-            }
-            return JsonResponse(response_data)
-
-    else:
-        return JsonResponse({
-            "status": "erro",
-            "mensagem": "Método não permitido.",
-            "dados": []
-        }, status=405)
-
-
 def consulta_veiculos(request):
     if request.method == "GET":
         return render(request, "automoveis/consulta_veiculos.html")  # Garante que a página abre corretamente
