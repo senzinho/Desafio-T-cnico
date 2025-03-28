@@ -1,35 +1,37 @@
-# automoveis/views.py
-import json
-from django.http import JsonResponse
 from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from django.db.models import Q
+import json
 from .models import Automovel
 
 def consulta_veiculos(request):
-    if request.method == 'GET':
-        # Renderiza a página de consulta
-        return render(request, 'automoveis/consulta_veiculos.html')
+    if request.method == "GET":
+        return render(request, "automoveis/consulta_veiculos.html")  # Garante que a página abre corretamente
     
-    if request.method == 'POST':
-        try:
-            # Obter os dados do corpo da requisição (critério de filtro)
-            dados = json.loads(request.body)
-            marca = dados.get('marca')
-            ano = dados.get('ano')
-            tipo_combustivel = dados.get('combustivel')  # Corrigido o nome do campo
+    elif request.method == "POST":
+        data = json.loads(request.body)
+        marca = data.get("marca", "").strip()
+        ano = data.get("ano", "").strip()
+        combustivel = data.get("combustivel", "").strip()
+        filtrar_semelhantes = data.get("filtrarSemelhantes", False)
 
-            # Consultar o banco de dados com base nos filtros
-            automovel = Automovel.objects.all()
-
+        filtros = Q()
+        if filtrar_semelhantes:
             if marca:
-                automovel = automovel.filter(marca=marca)
+                filtros |= Q(marca__iexact=marca)
             if ano:
-                automovel = automovel.filter(ano=ano)
-            if tipo_combustivel:
-                automovel = automovel.filter(combustivel=tipo_combustivel)
+                filtros |= Q(ano=ano)
+            if combustivel:
+                filtros |= Q(combustivel__icontains=combustivel)
+        else:
+            if marca:
+                filtros &= Q(marca__iexact=marca)
+            if ano:
+                filtros &= Q(ano=ano)
+            if combustivel:
+                filtros &= Q(combustivel__icontains=combustivel)
 
-            # Preparar a resposta com os dados dos veículos encontrados
-            resultado = list(automovel.values())  # Converte os resultados para lista de dicionários
-            return JsonResponse({'status': 'sucesso', 'dados': resultado}, safe=False)
-        except Exception as e:
-            return JsonResponse({'status': 'erro', 'mensagem': str(e)}, status=400)
+        veiculos = Automovel.objects.filter(filtros).values()
+        return JsonResponse({"status": "sucesso", "dados": list(veiculos)})
+
+    return JsonResponse({"status": "erro", "mensagem": "Método inválido"}, status=400)
