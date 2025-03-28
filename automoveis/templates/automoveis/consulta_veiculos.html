@@ -5,110 +5,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consulta de Veículos</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-
-        h1 {
-            color: #2c3e50;
-        }
-
-        form {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
-        form label {
-            font-size: 14px;
-            margin-top: 10px;
-            display: block;
-        }
-
-        form input {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .button-group button {
-            flex: 1;
-            background-color: #3498db;
-            color: white;
-            padding: 10px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        .button-group button:hover {
-            background-color: #2980b9;
-        }
-
-        #resultados {
-            margin-top: 30px;
-        }
-
-        .veiculo {
-            background-color: #fff;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .veiculo h3 {
-            margin: 0;
-            color: #3498db;
-        }
-
-        #loading {
-            display: none;
-            text-align: center;
-            font-size: 16px;
-            color: #888;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 </head>
-<body>
-    <h1>Filtrar Veículos</h1>
-    <form id="filtros-form">
-        <label for="marca">Marca:</label>
-        <input type="text" id="marca" name="marca" placeholder="Digite a marca">
-
-        <label for="ano">Ano:</label>
-        <input type="number" id="ano" name="ano" placeholder="Digite o ano">
-
-        <label for="combustivel">Combustível:</label>
-        <input type="text" id="combustivel" name="combustivel" placeholder="Ex: Gasolina">
-
-        <div class="button-group">
-            <button type="submit">Buscar</button>
-            <button type="button" id="filtrar-semelhantes">Filtrar Semelhantes</button>
+<body class="bg-light">
+    <div class="container mt-5">
+        <h1 class="text-center text-primary">Filtrar Veículos</h1>
+        <div class="card shadow p-4 mt-4">
+            <form id="filtros-form">
+                <div class="mb-3">
+                    <label for="marca" class="form-label">Marca:</label>
+                    <input type="text" id="marca" name="marca" class="form-control" placeholder="Digite a marca">
+                </div>
+                <div class="mb-3">
+                    <label for="ano" class="form-label">Ano:</label>
+                    <input type="number" id="ano" name="ano" class="form-control" placeholder="Digite o ano">
+                </div>
+                <div class="mb-3">
+                    <label for="combustivel" class="form-label">Combustível:</label>
+                    <input type="text" id="combustivel" name="combustivel" class="form-control" placeholder="Ex: Gasolina">
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-50">Buscar</button>
+                    <button type="button" id="filtrar-semelhantes" class="btn btn-secondary w-50">Filtrar Semelhantes</button>
+                </div>
+            </form>
         </div>
-    </form>
-
-    <h2>Resultados</h2>
-    <p id="loading">Carregando...</p>
-    <div id="resultados"></div>
-
+        <h2 class="mt-5 text-center">Resultados</h2>
+        <div class="text-center mt-3">
+            <div id="loading" class="spinner-border text-primary d-none" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+        </div>
+        <div id="resultados" class="row mt-4"></div>
+    </div>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const form = document.getElementById('filtros-form');
@@ -139,7 +68,7 @@
                     filtros.filtrarSemelhantes = true;
                 }
                 
-                loading.style.display = 'block';
+                loading.classList.remove('d-none');
                 resultadosDiv.innerHTML = '';
                 
                 fetch('/automoveis/consulta-veiculos/', {
@@ -152,20 +81,24 @@
                 })
                 .then(response => response.json())
                 .then(data => {
-                    loading.style.display = 'none';
+                    loading.classList.add('d-none');
                     if (data.status === 'sucesso') {
                         if (data.dados.length === 0) {
-                            resultadosDiv.innerHTML = '<p>Nenhum veículo encontrado.</p>';
+                            resultadosDiv.innerHTML = '<p class="text-center text-muted">Nenhum veículo encontrado.</p>';
                         } else {
                             resultadosDiv.innerHTML = ''; 
                             data.dados.forEach(veiculo => {
                                 const divVeiculo = document.createElement('div');
-                                divVeiculo.classList.add('veiculo');
+                                divVeiculo.classList.add('col-md-4');
                                 divVeiculo.innerHTML = `
-                                    <h3>${veiculo.ano} ${veiculo.marca} ${veiculo.modelo}</h3>
-                                    <p><strong>Motorização:</strong> ${veiculo.motorizacao}</p>
-                                    <p><strong>Combustível:</strong> ${veiculo.combustivel}</p>
-                                    <p><strong>Preço:</strong> R$ ${veiculo.preco}</p>
+                                    <div class="card shadow-sm mb-4">
+                                        <div class="card-body">
+                                            <h5 class="card-title text-primary">${veiculo.ano} ${veiculo.marca} ${veiculo.modelo}</h5>
+                                            <p class="card-text"><strong>Motorização:</strong> ${veiculo.motorizacao}</p>
+                                            <p class="card-text"><strong>Combustível:</strong> ${veiculo.combustivel}</p>
+                                            <p class="card-text"><strong>Preço:</strong> R$ ${veiculo.preco}</p>
+                                        </div>
+                                    </div>
                                 `;
                                 resultadosDiv.appendChild(divVeiculo);
                             });
@@ -175,11 +108,12 @@
                     }
                 })
                 .catch(error => {
-                    loading.style.display = 'none';
+                    loading.classList.add('d-none');
                     console.error('Erro na requisição:', error);
                 });
             }
         });
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
