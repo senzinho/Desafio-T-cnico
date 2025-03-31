@@ -1,120 +1,84 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from django.db.models import Q
 from automoveis.models import Automovel
 from .serializers import AutomovelSerializer
-import json
 
 class FiltrarVeiculosView(APIView):
     def post(self, request):
         try:
-            filtros = request.data  # Dados enviados no corpo da requisição
+            filtros = request.data  # Obtém os filtros da requisição
+            filtros_limpados = {k: v.strip().lower() for k, v in filtros.items() if v}  # Remove espaços e padroniza
 
-            marca = filtros.get('marca')
-            ano = filtros.get('ano')
-            combustivel = filtros.get('combustivel')
-            filtrar_semelhantes = filtros.get('filtrarSemelhantes', False)
+            # Construir a consulta dinamicamente
+            filtros_q = Q()
+            
+            if 'marca' in filtros_limpados:
+                filtros_q &= Q(marca__icontains=filtros_limpados['marca'])
+            
+            # Tratar o filtro de ano como inteiro
+            if 'ano' in filtros:
+                try:
+                    ano = int(filtros['ano'])
+                    filtros_q &= Q(ano=ano)  # Aplica filtro para ano como inteiro
+                except ValueError:
+                    return Response({"status": "erro", "mensagem": "Ano inválido.", "dados": []}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if 'combustivel' in filtros_limpados:
+                filtros_q &= Q(combustivel__icontains=filtros_limpados['combustivel'])
+            
+            # Filtro de "filtrarSemelhantes"
+            if filtros.get('filtrarSemelhantes', False):
+                filtros_q &= Q(tipo_veiculo__icontains="semelhante")
 
-            # Limpeza de filtros: removendo espaços e convertendo para minúsculas
-            if marca:
-                marca = marca.strip().lower()
-            if combustivel:
-                combustivel = combustivel.strip().lower()
+            # Executar a consulta em uma única chamada ao banco
+            query = Automovel.objects.filter(filtros_q).only('id', 'marca', 'ano', 'combustivel', 'cor', 'quilometragem', 'preco')
 
-            # Construir a consulta com base nos filtros
-            query = Automovel.objects.all()
-
-            if marca:
-                query = query.filter(marca__icontains=marca)
-            if ano:
-                query = query.filter(ano=ano)
-            if combustivel:
-                query = query.filter(combustivel__icontains=combustivel)
-
-            # Filtrar semelhantes se necessário
-            if filtrar_semelhantes:
-                query = query.filter(tipo_veiculo__icontains="semelhante")  # Ajuste conforme a lógica
-
-            # Se não encontrar resultados
+            # Verifica se há resultados
             if not query.exists():
-                response_data = {
-                    "status": "informativo",  # Modificado para 'informativo' ao invés de 'sucesso'
-                    "mensagem": "Nenhum veículo encontrado.",
-                    "dados": []
-                }
-                return Response(response_data)
+                return Response({"status": "informativo", "mensagem": "Nenhum veículo encontrado.", "dados": []})
 
-            # Se houver resultados, inclui os novos campos
+            # Serializa os dados
             dados = AutomovelSerializer(query, many=True).data
-
-            response_data = {
-                "status": "sucesso",
-                "mensagem": "Consulta realizada com sucesso.",
-                "dados": dados
-            }
-            return Response(response_data)
+            return Response({"status": "sucesso", "mensagem": "Consulta realizada com sucesso.", "dados": dados})
 
         except Exception as e:
-            error_message = str(e)
-            response_data = {
-                "status": "erro",
-                "mensagem": error_message,
-                "dados": []
-            }
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"status": "erro", "mensagem": f"Erro inesperado: {str(e)}", "dados": []}, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request):
         try:
-            # Obtendo filtros a partir da query string
-            marca = request.GET.get('marca')
-            ano = request.GET.get('ano')
-            combustivel = request.GET.get('combustivel')
-            filtrar_semelhantes = request.GET.get('filtrarSemelhantes', False)
+            # Mesmo tratamento da função POST, mas lendo de `request.GET`
+            filtros = request.GET.dict()  # Convertendo para dicionário comum
+            filtros_limpados = {k: v.strip().lower() for k, v in filtros.items() if v}
 
-            # Limpeza de filtros: removendo espaços e convertendo para minúsculas
-            if marca:
-                marca = marca.strip().lower()
-            if combustivel:
-                combustivel = combustivel.strip().lower()
+            filtros_q = Q()
+            
+            if 'marca' in filtros_limpados:
+                filtros_q &= Q(marca__icontains=filtros_limpados['marca'])
+            
+            # Tratar o filtro de ano como inteiro
+            if 'ano' in filtros:
+                try:
+                    ano = int(filtros['ano'])
+                    filtros_q &= Q(ano=ano)  # Aplica filtro para ano como inteiro
+                except ValueError:
+                    return Response({"status": "erro", "mensagem": "Ano inválido.", "dados": []}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if 'combustivel' in filtros_limpados:
+                filtros_q &= Q(combustivel__icontains=filtros_limpados['combustivel'])
+            
+            if filtros.get('filtrarSemelhantes', False):
+                filtros_q &= Q(tipo_veiculo__icontains="semelhante")
 
-            # Construir a consulta com base nos filtros
-            query = Automovel.objects.all()
+            # Executar a consulta em uma única chamada ao banco
+            query = Automovel.objects.filter(filtros_q).only('id', 'marca', 'ano', 'combustivel', 'cor', 'quilometragem', 'preco')
 
-            if marca:
-                query = query.filter(marca__icontains=marca)
-            if ano:
-                query = query.filter(ano=ano)
-            if combustivel:
-                query = query.filter(combustivel__icontains=combustivel)
-
-            # Filtrar semelhantes se necessário
-            if filtrar_semelhantes:
-                query = query.filter(tipo_veiculo__icontains="semelhante")  # Ajuste conforme a lógica
-
-            # Se não encontrar resultados
             if not query.exists():
-                response_data = {
-                    "status": "informativo",  # Modificado para 'informativo'
-                    "mensagem": "Nenhum veículo encontrado.",
-                    "dados": []
-                }
-                return Response(response_data)
+                return Response({"status": "informativo", "mensagem": "Nenhum veículo encontrado.", "dados": []})
 
-            # Se houver resultados, inclui os novos campos
             dados = AutomovelSerializer(query, many=True).data
-
-            response_data = {
-                "status": "sucesso",
-                "mensagem": "Consulta realizada com sucesso.",
-                "dados": dados
-            }
-            return Response(response_data)
+            return Response({"status": "sucesso", "mensagem": "Consulta realizada com sucesso.", "dados": dados})
 
         except Exception as e:
-            error_message = str(e)
-            response_data = {
-                "status": "erro",
-                "mensagem": error_message,
-                "dados": []
-            }
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"status": "erro", "mensagem": f"Erro inesperado: {str(e)}", "dados": []}, status=status.HTTP_400_BAD_REQUEST)

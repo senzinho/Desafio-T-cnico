@@ -3,7 +3,7 @@ import django
 from faker import Faker
 
 # Ajustar o caminho para o settings.py do seu projeto
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings')  # Ajuste 'app' para o nome correto do seu projeto
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings')  
 django.setup()
 
 # Agora você pode importar o modelo Automovel
