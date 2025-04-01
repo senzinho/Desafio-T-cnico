@@ -8,3 +8,4 @@ Nessa url você consegue fazer requisições GET e POST : http://127.0.0.1:8000/
 
 Nessa Outra URL você consegue inserir alguns filtros : http://127.0.0.1:8000/automoveis/consulta-veiculos/
 
+No Arquivo Populate_db.py rodei ele para inserir os valores no banco de dados
